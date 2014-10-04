@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Data
+db.sqlite3
+
+# Build dirs
+bin/
+build/
+temp/

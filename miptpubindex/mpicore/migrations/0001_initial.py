@@ -13,10 +13,10 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Author',
             fields=[
-                ('id', models.AutoField(verbose_name='ID', primary_key=True, serialize=False, auto_created=True)),
+                ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True, serialize=False)),
                 ('author_id', models.CharField(max_length=50)),
                 ('name_en', models.CharField(max_length=200)),
-                ('name_ru', models.CharField(max_length=200)),
+                ('name_ru', models.CharField(blank=True, max_length=200)),
                 ('h_index', models.IntegerField(default=0)),
                 ('institute', models.CharField(max_length=200)),
             ],
@@ -27,9 +27,9 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='MiptDepartment',
             fields=[
-                ('id', models.AutoField(verbose_name='ID', primary_key=True, serialize=False, auto_created=True)),
+                ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True, serialize=False)),
                 ('name_en', models.CharField(max_length=200)),
-                ('name_ru', models.CharField(max_length=200)),
+                ('name_ru', models.CharField(blank=True, max_length=200)),
                 ('mipt_index', models.IntegerField(default=0)),
             ],
             options={
@@ -39,12 +39,13 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Publication',
             fields=[
-                ('id', models.AutoField(verbose_name='ID', primary_key=True, serialize=False, auto_created=True)),
+                ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True, serialize=False)),
                 ('date', models.DateField()),
                 ('name_en', models.CharField(max_length=200)),
-                ('name_ru', models.CharField(max_length=200)),
+                ('name_ru', models.CharField(blank=True, max_length=200)),
                 ('doi', models.CharField(verbose_name='Digital Object Identifier', max_length=100)),
                 ('citations', models.IntegerField(default=0)),
+                ('author', models.ManyToManyField(null=True, blank=True, to='mpicore.Author')),
             ],
             options={
             },
@@ -53,13 +54,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='author',
             name='mipt_department',
-            field=models.ForeignKey(to='mpicore.MiptDepartment'),
-            preserve_default=True,
-        ),
-        migrations.AddField(
-            model_name='author',
-            name='publication',
-            field=models.ForeignKey(to='mpicore.Publication'),
+            field=models.ForeignKey(null=True, blank=True, to='mpicore.MiptDepartment'),
             preserve_default=True,
         ),
     ]

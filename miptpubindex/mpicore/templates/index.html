@@ -53,6 +53,9 @@
         <label class="btn btn-primary myButton" id="option2" >
           <input type="radio" name="options" onclick="change(2)"> ФАКУЛЬТЕТЫ
         </label>
+		<label class="btn btn-primary myButton" id="option3" >
+          <input type="radio" name="options" onclick="change(3)"> АФФИЛИАЦИИ
+        </label>
       </div>
 
       <script>
@@ -61,14 +64,15 @@
         var b2 = document.getElementById("option2"); 
         function change(c) {
 
-          if(c == 1) {
+          if (c == 1) {
             window.location.href = "http://127.0.0.1:8000/tab/kaf";
             ///window.open("http://127.0.0.1:8000/tab/kaf","_self")
-          }
-          else {
+          } else if (c == 2) {
             window.location.href = "http://127.0.0.1:8000/tab/fak";            
             //window.open("http://127.0.0.1:8000/tab/fak","_self")
-          }
+          } else {
+			window.location.href = "http://127.0.0.1:8000/tab/aff";            
+		  }
         }
       </script>
 
@@ -149,9 +153,11 @@
       function prepareActiveButton(){
         if (window.location.href.indexOf('kaf') > -1){
           $('#option1').addClass('active');
-        }else{
+        } else if (window.location.href.indexOf('fak') > -1){
           $('#option2').addClass('active');
-        }
+        } else {
+		  $('#option3').addClass('active');
+		}
       }
 
       $(function(){

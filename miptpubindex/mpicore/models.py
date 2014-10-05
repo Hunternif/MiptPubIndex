@@ -52,7 +52,9 @@ class Journal(models.Model):
 class Affiliation(models.Model):
   af_id = models.CharField(max_length=50, primary_key=True)
   name_en = models.CharField(max_length=500)
-  address = models.CharField(max_length=500)
+  
+  def __str__(self):
+    return self.name_en
 
 
 class Publication(models.Model):

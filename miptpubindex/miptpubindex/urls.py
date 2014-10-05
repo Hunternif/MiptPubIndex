@@ -11,4 +11,5 @@ urlpatterns = patterns('',
     url(r'^do1/', "mpicore.views.rows"),
     url(r'^tab/fak', "mpicore.views.faks"),
     url(r'^tab/kaf', "mpicore.views.kafs"),
+    url(r'^tab/aff', "mpicore.views.affiliations"),
 )

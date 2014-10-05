@@ -6,7 +6,7 @@ class AuthorInline(admin.TabularInline):
   extra = 3
 
 class AffiliationInline(admin.TabularInline):
-  model = Publication.author.through
+  model = Publication.affiliation.through
   extra = 2
 
 class PublicationAdmin(admin.ModelAdmin):

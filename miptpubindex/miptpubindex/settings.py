@@ -25,8 +25,16 @@ DEBUG = True
 TEMPLATE_DEBUG = True
 
 ALLOWED_HOSTS = []
+PROJECT_PATH = os.path.realpath(os.path.dirname(__file__))
 
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'static'),
+)
 
+TEMPLATE_DIRS = (
+    #'/home/nikita/Documents/hack/proj/MiptPubIndex/miptpubindex/mpicore/templates',
+     PROJECT_PATH + '/templates/',
+)
 # Application definition
 
 INSTALLED_APPS = (

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
 
@@ -7,6 +8,7 @@ urlpatterns = patterns('',
     # url(r'^blog/', include('blog.urls')),
 
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^do/', "mpicore.views.tab"),
     url(r'^do1/', "mpicore.views.rows"),
+    url(r'^tab/fak', "mpicore.views.faks"),
+    url(r'^tab/kaf', "mpicore.views.kafs"),
 )

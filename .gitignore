@@ -8,4 +8,8 @@ db.sqlite3
 # Build dirs
 bin/
 build/
+
+# Temporary directories and logs
 temp/
+logs/
+*.log

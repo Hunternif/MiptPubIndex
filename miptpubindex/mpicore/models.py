@@ -3,6 +3,7 @@ from django.db import models
 
 class MiptDepartment(models.Model):
   '''Факультет МФТИ'''
+  id = models.IntegerField(primary_key=True)
   name_en = models.CharField(max_length=500, blank=True)
   name_ru = models.CharField(max_length=500)
   
@@ -27,7 +28,7 @@ class MiptChair(models.Model):
 
 
 class Author(models.Model):
-  author_id = models.CharField(max_length=50)
+  author_id = models.CharField(max_length=50, primary_key=True)
   name_en = models.CharField(max_length=200)
   name_ru = models.CharField(max_length=200, blank=True)
   mipt_chair = models.ForeignKey(MiptChair, blank=True, null=True)
@@ -39,7 +40,7 @@ class Author(models.Model):
 
 
 class Journal(models.Model):
-  issn = models.CharField('ISSN', max_length=50)
+  issn = models.CharField('ISSN', max_length=50, primary_key=True)
   name_en = models.CharField(max_length=200)
   rank_sjr = models.FloatField('SJR (SCImago Journal Rank)', default=0)
   rank_snip = models.FloatField('SNIP (Source Normalized Impact per Paper)', default=0)
@@ -53,9 +54,15 @@ class Publication(models.Model):
   name_en = models.CharField(max_length=200)
   name_ru = models.CharField(max_length=200, blank=True)
   author = models.ManyToManyField(Author, blank=True, null=True)
-  doi = models.CharField('DOI (Digital Object Identifier)', max_length=100)
+  doi = models.CharField('DOI (Digital Object Identifier)', max_length=100, primary_key=True)
   citations = models.IntegerField(default=0)
-  journal = models.ForeignKey(Journal)
+  journal = models.ForeignKey(Journal, blank=True, null=True)
+  
+  # Название института
+  affiliation = models.CharField(max_length=500)
+  
+  # Кафедра
+  chair = models.ForeignKey(MiptChair, blank=True, null=True)
   
   def __str__(self):
     return "{} {} ({} cit.)".format(self.name_en, self.date.year, self.citations)

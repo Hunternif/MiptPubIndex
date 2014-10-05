@@ -49,6 +49,12 @@ class Journal(models.Model):
     return self.name_en
 
 
+class Affiliation(models.Model):
+  af_id = models.CharField(max_length=50, primary_key=True)
+  name_en = models.CharField(max_length=500)
+  address = models.CharField(max_length=500)
+
+
 class Publication(models.Model):
   date = models.DateField()
   name_en = models.CharField(max_length=200)
@@ -58,8 +64,7 @@ class Publication(models.Model):
   citations = models.IntegerField(default=0)
   journal = models.ForeignKey(Journal, blank=True, null=True)
   
-  # Название института
-  affiliation = models.CharField(max_length=500)
+  affiliation = models.ManyToManyField(Affiliation, blank=True, null=True)
   
   # Кафедра
   chair = models.ForeignKey(MiptChair, blank=True, null=True)

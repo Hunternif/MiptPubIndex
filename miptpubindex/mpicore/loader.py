@@ -63,16 +63,18 @@ class loader:
                 dateStr = entry.find('prism:coverDate', namespaces).text
                 #todo parse date
                 date = timezone.now()
-                affil = entry.find('./xmlns:affiliation/xmlns:affilname', namespaces).text
+                affil_name = entry.find('./xmlns:affiliation/xmlns:affilname', namespaces).text
+                affil = Affiliation.objects.get_or_create(af_id = affil_name, name_en = affil_name)
                 journal, authors = self.abstractRetrive(doi)
-                pub = Publication.create(doi=doi, 
+                pub = Publication(doi=doi, 
                                   name_en = name_en, 
                                   date = date,  
-                                  journal = journal,
-                                  affiliation = affil)
+                                  journal = journal)
+                pub.save()
                 pub.author = authors
+                pub.affiliation = [affil,]
             pub.citations = int(entry.find('xmlns:citedby-count', namespaces).text)
-            print(pub)
+            #print(pub)
         totalRes = int(tree.find('opensearch:totalResults', namespaces).text)
         start = int(tree.find('opensearch:startIndex', namespaces).text)
         itemsPerPage = int(tree.find('opensearch:itemsPerPage', namespaces).text)
@@ -107,7 +109,8 @@ class loader:
             journal = Journal.objects.get(issn=issn)
         except (Journal.DoesNotExist):
             publicationName = coredata.find('prism:publicationName', namespaces).text
-            journal = Journal.create(issn = issn, name_en = publicationName)
+            journal = Journal(issn = issn, name_en = publicationName)
+            journal.save()
         
         authors = []
         for authorElm in tree.findall('.//xmlns:authors/xmlns:author', namespaces):
@@ -117,14 +120,14 @@ class loader:
                 print ("authore {} for id {}".format(author, authorID))
             except (Author.DoesNotExist):    
                 indexedName = authorElm.find('ce:indexed-name', namespaces).text
-                author = Author.create(author_id=authorID, name_en = indexedName)
+                author = Author(author_id=authorID, name_en = indexedName)
+                author.save()
                 print(author)
             authors.append(author)
         return journal, authors
-        
+
 query = 'AF-ID({})'.format(miptAffilationID)
 loader().loadAllResultsForQuery(query)        
 #loader().scopusRequest(query,count=5)
 #loader().abstractRetrive("10.1016/j.atmosres.2014.07.018")
-
 

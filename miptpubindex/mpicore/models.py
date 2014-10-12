@@ -72,4 +72,4 @@ class Publication(models.Model):
   chair = models.ForeignKey(MiptChair, blank=True, null=True)
   
   def __str__(self):
-    return "{} {} ({} cit.)".format(self.name_en, self.date.year, self.citations)
+    return "{} {} {} ({} cit.)".format(self.doi, self.name_en, self.date.year, self.citations)

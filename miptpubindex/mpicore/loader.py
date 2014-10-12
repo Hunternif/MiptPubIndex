@@ -1,15 +1,11 @@
-import urllib 
-import urllib.request as req
-from urllib import parse
-from bs4 import BeautifulSoup
+import requests 
 from distutils.debug import DEBUG
 from mpicore.models import *
 from datetime import date
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
-import xml.etree.ElementTree as ET
 from django.dispatch.dispatcher import NONE_ID
-
+from lxml import etree
 
 apiKey = "8b3a879351906d834617638b92a47857"
 apiHost = 'http://api.elsevier.com'
@@ -32,6 +28,7 @@ class loader:
         
     def scopusRequest(self, query, start=0, count=25):
         print("call start: {} count:{}".format(start, count))
+        tree = None
         try:
             query = {'query':query,
                      'start':start,
@@ -39,49 +36,38 @@ class loader:
             query.update(self.defaultQuery)
             encoded_args = urllib.parse.urlencode(query)
             url = apiHost + searchMethod + "?" + encoded_args
-            request = req.Request(url)
             if debug_search:
-                returnDoc = open('search.xml', 'r').read()
+                tree = etree.parse('search3.xml')
             else:
-                returnDoc = req.urlopen(request).read()
-        except (urllib.error.HTTPError, urllib.error.URLError) as er:
-            print(er)
+                tree = etree.parse(url)
+        except Exception as e:
+            print(e)
+            raise
         
-        tree = ET.XML(returnDoc)
-        namespaces = {'xmlns':'http://www.w3.org/2005/Atom',
-                      'dc':'http://purl.org/dc/elements/1.1/',
-                      'prism':'http://prismstandard.org/namespaces/basic/2.0/',
-                      'opensearch':'http://a9.com/-/spec/opensearch/1.1/'}
+        nsmap = tree.getroot().nsmap
+        nsmap['ns0'] = nsmap.pop(None)
 
-        for entry in tree.findall('.//xmlns:entry', namespaces):
-            doi = entry.find('prism:doi', namespaces).text
-            print ('===== pub: {}'.format(doi))
-            try:
-               pub = Publication.objects.get(doi=doi)
-            except (Publication.DoesNotExist):
-                name_en = entry.find('dc:title', namespaces).text
-                dateStr = entry.find('prism:coverDate', namespaces).text
+        for entry in tree.findall('.//ns0:entry', nsmap):
+            doi = entry.find('prism:doi', nsmap).text
+            pub, created = Publication.objects.get_or_create(doi=doi, defaults = {'date':timezone.now()})
+            if created:
+                pub.name_en = entry.find('dc:title', nsmap).text
+                print('Fill info for new publication: {} {}'.format(doi,pub.name_en))
+                dateStr = entry.find('prism:coverDate', nsmap).text
                 #todo parse date
-                date = timezone.now()
-                affil_name = entry.find('./xmlns:affiliation/xmlns:affilname', namespaces).text
-                affil = Affiliation.objects.get_or_create(af_id = affil_name, name_en = affil_name)
-                journal, authors = self.abstractRetrive(doi)
-                pub = Publication(doi=doi, 
-                                  name_en = name_en, 
-                                  date = date,  
-                                  journal = journal)
-                pub.save()
-                pub.author = authors
-                pub.affiliation = [affil,]
-            pub.citations = int(entry.find('xmlns:citedby-count', namespaces).text)
-            #print(pub)
-        totalRes = int(tree.find('opensearch:totalResults', namespaces).text)
-        start = int(tree.find('opensearch:startIndex', namespaces).text)
-        itemsPerPage = int(tree.find('opensearch:itemsPerPage', namespaces).text)
+                pub.date = timezone.now()
+                pub.journal, pub.author, pub.affiliation = self.abstractRetrive(doi)
+            pub.citations = int(entry.find('ns0:citedby-count', nsmap).text)
+            pub.save()
+            print(['Finished processing: ', pub], '\n')
+        totalRes = int(tree.find('opensearch:totalResults', nsmap).text)
+        start = int(tree.find('opensearch:startIndex', nsmap).text)
+        itemsPerPage = int(tree.find('opensearch:itemsPerPage', nsmap).text)
         print('totalRes: {}, start{}, count{}'.format(totalRes, start, itemsPerPage))
         return totalRes, start, itemsPerPage  
         
     def abstractRetrive(self, doi):
+        tree = None
         try:
             query = self.defaultQuery
             encoded_args = parse.urlencode(query)
@@ -89,45 +75,44 @@ class loader:
             print(url)
             request = req.Request(url)
             if debug_search:
-                returnDoc = open('abstract.xml', 'r').read()
+                tree = etree.parse('abstract3.xml')
             else:
-                returnDoc = req.urlopen(request).read()
-        except (urllib.error.HTTPError, urllib.error.URLError) as er:
-            print(er)
+                tree = etree.parse(url)
+        except Exception as e:
+            print(e)
+            raise
  
-        tree = ET.XML(returnDoc)
-        namespaces = {'xmlns':'http://www.elsevier.com/xml/svapi/abstract/dtd',
-                      'ce':'http://www.elsevier.com/xml/ani/common',
-                      'prism':'http://prismstandard.org/namespaces/basic/2.0/'
-                      }
-        
-        
-        
-        coredata = tree.find('xmlns:coredata', namespaces)
-        issn = coredata.find('prism:issn', namespaces).text
-        try:
-            journal = Journal.objects.get(issn=issn)
-        except (Journal.DoesNotExist):
-            publicationName = coredata.find('prism:publicationName', namespaces).text
-            journal = Journal(issn = issn, name_en = publicationName)
-            journal.save()
-        
+        nsmap = tree.getroot().nsmap
+        nsmap['ns0'] = nsmap.pop(None)
+
+        coredata = tree.find('ns0:coredata', nsmap)
+        issn = coredata.find('prism:issn', nsmap).text
+        publicationName = coredata.find('prism:publicationName', nsmap).text
+        journal,_ = Journal.objects.get_or_create(issn=issn, defaults = {'name_en':publicationName})
+        print(['journal: ', journal])
+
+        affils = []
         authors = []
-        for authorElm in tree.findall('.//xmlns:authors/xmlns:author', namespaces):
-            authorID = authorElm.attrib['auid']
-            try:
-                author = Author.objects.get(author_id=authorID)
-                print ("authore {} for id {}".format(author, authorID))
-            except (Author.DoesNotExist):    
-                indexedName = authorElm.find('ce:indexed-name', namespaces).text
-                author = Author(author_id=authorID, name_en = indexedName)
-                author.save()
+        miptRelatedAuthorGroups = tree.xpath('//author-group[author/@auid=//affiliation[@afid=60000308]/../author/@auid]')
+        if not miptRelatedAuthorGroups:
+            print('WARNING no mipt related author-group available for this publication!')
+        for authorGroups in miptRelatedAuthorGroups:
+            for org in authorGroups.xpath('affiliation/organization'):
+                affil_id = org.getparent().get('afid')
+                affil_name = org.text
+                affil,_ = Affiliation.objects.get_or_create(af_id = affil_id, defaults = {'name_en':affil_name})
+                print(affil)
+                affils.append(affil)
+         
+            for authorElm in authorGroups.xpath('author'):
+                authorID = authorElm.get('auid')
+                indexedName = authorElm.find('ce:indexed-name', nsmap).text
+                author,_ = Author.objects.get_or_create(author_id=authorID, defaults = {'name_en':indexedName})
                 print(author)
-            authors.append(author)
-        return journal, authors
+                authors.append(author)
+        return journal, authors, affils
 
 query = 'AF-ID({})'.format(miptAffilationID)
 loader().loadAllResultsForQuery(query)        
 #loader().scopusRequest(query,count=5)
 #loader().abstractRetrive("10.1016/j.atmosres.2014.07.018")
-

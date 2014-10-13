@@ -14,7 +14,7 @@ class PublicationAdmin(admin.ModelAdmin):
     AuthorInline,
     AffiliationInline
   )
-  fields = ('date', 'name_en', 'name_ru', 'doi', 'journal', 'citations')
+  fields = ('date', 'name_en', 'name_ru', 'eid', 'doi', 'journal', 'citations')
 
 
 admin.site.register(Journal)

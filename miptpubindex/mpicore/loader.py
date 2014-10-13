@@ -10,7 +10,7 @@ from lxml import etree
 apiKey = "8b3a879351906d834617638b92a47857"
 apiHost = 'http://api.elsevier.com'
 searchMethod = '/content/search/index:scopus'
-abstractRetrivMethod = '/content/abstract/doi/'
+abstractRetrivMethod = '/content/abstract/eid/'
 miptAffilationID = "60000308"
 
 debug_search = False
@@ -48,15 +48,19 @@ class loader:
         nsmap['ns0'] = nsmap.pop(None)
 
         for entry in tree.findall('.//ns0:entry', nsmap):
-            doi = entry.find('prism:doi', nsmap).text
-            pub, created = Publication.objects.get_or_create(doi=doi, defaults = {'date':timezone.now()})
+            
+            eid = entry.find('ns0:eid', nsmap).text
+            pub, created = Publication.objects.get_or_create(eid=eid, defaults = {'date':timezone.now()})
             if created:
+                doiElm = entry.find('prism:doi', nsmap)
+                if doiElm is not None:
+                    pub.doi = doiElm.text
                 pub.name_en = entry.find('dc:title', nsmap).text
-                print('Fill info for new publication: {} {}'.format(doi,pub.name_en))
+                print('Fill info for new publication: {} {}'.format(eid,pub.name_en))
                 dateStr = entry.find('prism:coverDate', nsmap).text
                 #todo parse date
                 pub.date = timezone.now()
-                pub.journal, pub.author, pub.affiliation = self.abstractRetrive(doi)
+                pub.journal, pub.author, pub.affiliation = self.abstractRetrive(eid)
             pub.citations = int(entry.find('ns0:citedby-count', nsmap).text)
             pub.save()  # otherwise name_en is not saved!
             print(['Finished processing: ', pub], '\n')
@@ -66,12 +70,12 @@ class loader:
         print('totalRes: {}, start{}, count{}'.format(totalRes, start, itemsPerPage))
         return totalRes, start, itemsPerPage  
         
-    def abstractRetrive(self, doi):
+    def abstractRetrive(self, eid):
         tree = None
         try:
             query = self.defaultQuery
             encoded_args = parse.urlencode(query)
-            url = parse.urljoin(apiHost, parse.quote(abstractRetrivMethod + doi)) + "?" + encoded_args
+            url = parse.urljoin(apiHost, parse.quote(abstractRetrivMethod + eid)) + "?" + encoded_args
             if debug_search:
                 tree = etree.parse('abstract3.xml')
             else:

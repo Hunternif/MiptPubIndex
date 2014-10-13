@@ -1,4 +1,4 @@
-import requests 
+from urllib import parse 
 from distutils.debug import DEBUG
 from mpicore.models import *
 from datetime import date
@@ -34,7 +34,7 @@ class loader:
                      'start':start,
                      'count':count}
             query.update(self.defaultQuery)
-            encoded_args = urllib.parse.urlencode(query)
+            encoded_args = parse.urlencode(query)
             url = apiHost + searchMethod + "?" + encoded_args
             if debug_search:
                 tree = etree.parse('search3.xml')
@@ -58,7 +58,7 @@ class loader:
                 pub.date = timezone.now()
                 pub.journal, pub.author, pub.affiliation = self.abstractRetrive(doi)
             pub.citations = int(entry.find('ns0:citedby-count', nsmap).text)
-            pub.save()
+            pub.save()  # otherwise name_en is not saved!
             print(['Finished processing: ', pub], '\n')
         totalRes = int(tree.find('opensearch:totalResults', nsmap).text)
         start = int(tree.find('opensearch:startIndex', nsmap).text)
@@ -72,8 +72,6 @@ class loader:
             query = self.defaultQuery
             encoded_args = parse.urlencode(query)
             url = parse.urljoin(apiHost, parse.quote(abstractRetrivMethod + doi)) + "?" + encoded_args
-            print(url)
-            request = req.Request(url)
             if debug_search:
                 tree = etree.parse('abstract3.xml')
             else:

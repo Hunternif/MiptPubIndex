@@ -40,7 +40,12 @@ class Author(models.Model):
 
 
 class Journal(models.Model):
-  issn = models.CharField('ISSN', max_length=50, primary_key=True)
+  PUB_ID_TYPE = (
+    ('ISSN', 'International Standard Serial Number'),
+    ('ISBN', 'International Standard Book Number')
+  )
+  id = models.CharField('ID', max_length=50, primary_key=True)
+  id_type = models.CharField(max_length=4, choices = PUB_ID_TYPE)
   name_en = models.CharField(max_length=200)
   rank_sjr = models.FloatField('SJR (SCImago Journal Rank)', default=0)
   rank_snip = models.FloatField('SNIP (Source Normalized Impact per Paper)', default=0)

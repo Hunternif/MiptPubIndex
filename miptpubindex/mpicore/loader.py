@@ -88,9 +88,17 @@ class loader:
         nsmap['ns0'] = nsmap.pop(None)
 
         coredata = tree.find('ns0:coredata', nsmap)
-        issn = coredata.find('prism:issn', nsmap).text
-        publicationName = coredata.find('prism:publicationName', nsmap).text
-        journal,_ = Journal.objects.get_or_create(issn=issn, defaults = {'name_en':publicationName})
+        id_type = None
+        journal_id = None
+        issnElm = coredata.find('prism:issn', nsmap)
+        if issnElm is not None:
+            id_type = 'ISSN'
+            journal_id = issnElm.text
+        else:
+            id_type = 'ISBN'
+            journal_id = coredata.find('prism:isbn', nsmap).text
+        publicationName = coredata.find('prism:publicationName', nsmap).text                
+        journal,_ = Journal.objects.get_or_create(id=journal_id, id_type=id_type, defaults={'name_en':publicationName})
         print(['journal: ', journal])
 
         affils = []
@@ -117,4 +125,4 @@ class loader:
 query = 'AF-ID({})'.format(miptAffilationID)
 loader().loadAllResultsForQuery(query)        
 #loader().scopusRequest(query,count=5)
-#loader().abstractRetrive("10.1016/j.atmosres.2014.07.018")
+#loader().abstractRetrive("2-s2.0-84897695957")

@@ -108,8 +108,10 @@ class loader:
             print('WARNING no mipt related author-group available for this publication!')
         for authorGroups in miptRelatedAuthorGroups:
             for org in authorGroups.xpath('affiliation/organization'):
-                affil_id = org.getparent().get('afid')
                 affil_name = org.text
+                affil_id = org.getparent().get('afid')
+                if affil_id is None:
+                    affil_id = affil_name[:50]
                 affil,_ = Affiliation.objects.get_or_create(af_id = affil_id, defaults = {'name_en':affil_name})
                 print(affil)
                 affils.append(affil)

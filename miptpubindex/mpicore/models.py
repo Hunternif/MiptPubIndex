@@ -42,7 +42,8 @@ class Author(models.Model):
 class Journal(models.Model):
   PUB_ID_TYPE = (
     ('ISSN', 'International Standard Serial Number'),
-    ('ISBN', 'International Standard Book Number')
+    ('ISBN', 'International Standard Book Number'),
+    ('NAME', 'Part of the name, no ISSN or ISBN provided')
   )
   id = models.CharField('ID', max_length=50, primary_key=True)
   id_type = models.CharField(max_length=4, choices = PUB_ID_TYPE)

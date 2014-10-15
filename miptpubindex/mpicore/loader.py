@@ -91,15 +91,26 @@ class loader:
         id_type = None
         journal_id = None
         issnElm = coredata.find('prism:issn', nsmap)
+        isbnElm = coredata.find('prism:isbn', nsmap)
+        publicationNameElm = coredata.find('prism:publicationName', nsmap)
+        publicationName = None
+        if publicationNameElm is not None:
+            publicationName = publicationNameElm.text
         if issnElm is not None:
             id_type = 'ISSN'
             journal_id = issnElm.text
-        else:
+        elif isbnElm is not None:
             id_type = 'ISBN'
-            journal_id = coredata.find('prism:isbn', nsmap).text
-        publicationName = coredata.find('prism:publicationName', nsmap).text                
-        journal,_ = Journal.objects.get_or_create(id=journal_id, id_type=id_type, defaults={'name_en':publicationName})
-        print(['journal: ', journal])
+            journal_id = isbnElm.text
+        elif publicationName is not None:
+            id_type = 'NAME'
+            journal_id = publicationName[:50]
+            
+        if journal_id is not None:
+            journal,_ = Journal.objects.get_or_create(id=journal_id, id_type=id_type, defaults={'name_en':publicationName})
+            print(['journal: ', journal])
+        else:
+            print('could not get info about journal')
 
         affils = []
         authors = []

@@ -68,6 +68,7 @@ def affiliations(request):
     if aff_total_citations > max_rank:
       max_rank = aff_total_citations
   # Update percentages:
+  data_rows.sort(key=lambda row: row['rank'], reverse=True)
   if max_rank > 0:
     for data_row in data_rows:
       data_row['percent'] = 100. * data_row['rank'] / max_rank

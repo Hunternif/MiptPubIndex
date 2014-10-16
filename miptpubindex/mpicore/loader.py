@@ -90,10 +90,11 @@ class loader:
         coredata = tree.find('ns0:coredata', nsmap)
         id_type = None
         journal_id = None
+        publicationName = None
         issnElm = coredata.find('prism:issn', nsmap)
         isbnElm = coredata.find('prism:isbn', nsmap)
         publicationNameElm = coredata.find('prism:publicationName', nsmap)
-        publicationName = None
+        
         if publicationNameElm is not None:
             publicationName = publicationNameElm.text
         if issnElm is not None:
@@ -107,6 +108,8 @@ class loader:
             journal_id = publicationName[:50]
             
         if journal_id is not None:
+            if publicationName is None:
+                publicationName = journal_id
             journal,_ = Journal.objects.get_or_create(id=journal_id, id_type=id_type, defaults={'name_en':publicationName})
             print(['journal: ', journal])
         else:

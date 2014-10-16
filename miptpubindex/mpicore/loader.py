@@ -29,41 +29,47 @@ class loader:
     def scopusRequest(self, query, start=0, count=25):
         print("call start: {} count:{}".format(start, count))
         tree = None
+        query = {'query':query,
+                 'start':start,
+                 'count':count}
+        query.update(self.defaultQuery)
+        encoded_args = parse.urlencode(query)
+        url = apiHost + searchMethod + "?" + encoded_args
         try:
-            query = {'query':query,
-                     'start':start,
-                     'count':count}
-            query.update(self.defaultQuery)
-            encoded_args = parse.urlencode(query)
-            url = apiHost + searchMethod + "?" + encoded_args
             if debug_search:
                 tree = etree.parse('search3.xml')
             else:
                 tree = etree.parse(url)
-        except Exception as e:
-            print(e)
-            raise
+        except IOError as e:
+            print(['Failed to load search request: ',e])
+            return 0,0,0
         
         nsmap = tree.getroot().nsmap
         nsmap['ns0'] = nsmap.pop(None)
 
-        for entry in tree.findall('.//ns0:entry', nsmap):
-            
+        for entry in tree.findall('.//ns0:entry', nsmap):           
             eid = entry.find('ns0:eid', nsmap).text
+            print('Fill info for new publication: {}'.format(eid))
             pub, created = Publication.objects.get_or_create(eid=eid, defaults = {'date':timezone.now()})
             if created:
                 doiElm = entry.find('prism:doi', nsmap)
                 if doiElm is not None:
                     pub.doi = doiElm.text
                 pub.name_en = entry.find('dc:title', nsmap).text
-                print('Fill info for new publication: {} {}'.format(eid,pub.name_en))
+                print('Title: {}'.format(pub.name_en))
                 dateStr = entry.find('prism:coverDate', nsmap).text
                 #todo parse date
                 pub.date = timezone.now()
-                pub.journal, pub.author, pub.affiliation = self.abstractRetrive(eid)
-            pub.citations = int(entry.find('ns0:citedby-count', nsmap).text)
-            pub.save()  # otherwise name_en is not saved!
-            print(['Finished processing: ', pub], '\n')
+                try:
+                    pub.journal, pub.author, pub.affiliation = self.abstractRetrive(eid)
+                except IOError as e:
+                    print(['Failed to load more details about this paper:', e])
+                    pub.delete();
+                    pub = None;
+            if pub is not None:                        
+                pub.citations = int(entry.find('ns0:citedby-count', nsmap).text)
+                pub.save()  # otherwise name_en is not saved!
+                print(['Finished processing: ', pub], '\n')
         totalRes = int(tree.find('opensearch:totalResults', nsmap).text)
         start = int(tree.find('opensearch:startIndex', nsmap).text)
         itemsPerPage = int(tree.find('opensearch:itemsPerPage', nsmap).text)
@@ -71,18 +77,14 @@ class loader:
         return totalRes, start, itemsPerPage  
         
     def abstractRetrive(self, eid):
-        tree = None
-        try:
-            query = self.defaultQuery
-            encoded_args = parse.urlencode(query)
-            url = parse.urljoin(apiHost, parse.quote(abstractRetrivMethod + eid)) + "?" + encoded_args
-            if debug_search:
-                tree = etree.parse('abstract3.xml')
-            else:
-                tree = etree.parse(url)
-        except Exception as e:
-            print(e)
-            raise
+        tree = None        
+        query = self.defaultQuery
+        encoded_args = parse.urlencode(query)
+        url = parse.urljoin(apiHost, parse.quote(abstractRetrivMethod + eid)) + "?" + encoded_args
+        if debug_search:
+            tree = etree.parse('abstract3.xml')
+        else:
+            tree = etree.parse(url)
  
         nsmap = tree.getroot().nsmap
         nsmap['ns0'] = nsmap.pop(None)
@@ -140,5 +142,5 @@ class loader:
 
 query = 'AF-ID({})'.format(miptAffilationID)
 loader().loadAllResultsForQuery(query)        
-#loader().scopusRequest(query,count=5)
+#loader().scopusRequest(query,5000, 25)
 #loader().abstractRetrive("2-s2.0-84897695957")
